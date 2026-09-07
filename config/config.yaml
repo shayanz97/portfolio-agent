@@ -1,0 +1,9 @@
+version: "0.1.0"
+environment: "paper"
+
+includes:
+  - assets.yaml
+  - events.yaml
+  - strategy.yaml
+  - risk.yaml
+  - execution.yaml

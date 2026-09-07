@@ -1,0 +1,17 @@
+execution:
+  environment: "paper"
+  broker: "ibkr"
+
+  automatic_execution: false
+  human_approval_required: true
+
+  market_orders_allowed: false
+  limit_orders_only: true
+
+  maximum_order_value_eur: 5000
+  daily_trade_limit: 10
+
+  live_trading:
+    enabled: false
+    require_cli_flag: true
+    require_environment_variable: true

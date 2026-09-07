@@ -1,0 +1,96 @@
+assets:
+  WTI:
+    symbol: "CL"
+    asset_class: "oil"
+    enabled: true
+    trade_enabled: false
+    provider: "future"
+    currency: "USD"
+
+  BRENT:
+    symbol: "BZ"
+    asset_class: "oil"
+    enabled: true
+    trade_enabled: false
+    provider: "future"
+    currency: "USD"
+
+  GOLD:
+    symbol: "GC"
+    asset_class: "precious_metal"
+    enabled: true
+    trade_enabled: false
+    provider: "future"
+    currency: "USD"
+
+  SILVER:
+    symbol: "SI"
+    asset_class: "precious_metal"
+    enabled: true
+    trade_enabled: false
+    provider: "future"
+    currency: "USD"
+
+  BTC:
+    symbol: "BTC"
+    asset_class: "crypto"
+    enabled: true
+    trade_enabled: false
+    provider: "crypto"
+    currency: "USD"
+
+  ETH:
+    symbol: "ETH"
+    asset_class: "crypto"
+    enabled: true
+    trade_enabled: false
+    provider: "crypto"
+    currency: "USD"
+
+  SOL:
+    symbol: "SOL"
+    asset_class: "crypto"
+    enabled: true
+    trade_enabled: false
+    provider: "crypto"
+    currency: "USD"
+
+  SPY:
+    symbol: "SPY"
+    asset_class: "equity"
+    enabled: true
+    trade_enabled: true
+    provider: "ibkr"
+    currency: "USD"
+
+  QQQ:
+    symbol: "QQQ"
+    asset_class: "equity"
+    enabled: true
+    trade_enabled: true
+    provider: "ibkr"
+    currency: "USD"
+
+  VIX:
+    symbol: "VIX"
+    asset_class: "volatility"
+    enabled: true
+    trade_enabled: false
+    provider: "macro"
+    currency: "USD"
+
+  DXY:
+    symbol: "DXY"
+    asset_class: "macro"
+    enabled: true
+    trade_enabled: false
+    provider: "macro"
+    currency: "USD"
+
+  US10Y:
+    symbol: "US10Y"
+    asset_class: "rates"
+    enabled: true
+    trade_enabled: false
+    provider: "macro"
+    currency: "USD"

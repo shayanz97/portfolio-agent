@@ -1,0 +1,43 @@
+portfolio:
+  max_single_asset_weight: 0.20
+  max_crypto_weight: 0.30
+  max_equity_weight: 0.60
+  max_precious_metals_weight: 0.30
+  max_energy_weight: 0.20
+  min_cash_weight: 0.10
+  max_rebalance_per_run: 0.15
+
+trade_risk:
+  max_risk_per_trade: 0.0075
+  max_total_open_risk: 0.04
+  minimum_risk_reward: 1.8
+  maximum_open_positions: 10
+
+stop_loss:
+  atr_enabled: true
+  atr_multiplier: 1.5
+  technical_support_enabled: true
+  maximum_loss_pct: 0.05
+
+take_profit:
+  tp1:
+    r_multiple: 1.0
+    close_pct: 0.30
+  tp2:
+    r_multiple: 2.0
+    close_pct: 0.40
+  trailing:
+    enabled: true
+    remaining_pct: 0.30
+
+margin:
+  max_margin_utilization: 0.40
+  minimum_margin_buffer: 0.30
+
+circuit_breakers:
+  daily_loss_pct: 0.03
+  max_drawdown_pct: 0.08
+  stale_market_data_seconds: 60
+  max_order_rejections: 3
+  disable_on_broker_disconnect: true
+  disable_on_portfolio_mismatch: true
