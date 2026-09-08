@@ -605,6 +605,52 @@ class BacktestConfig(FrozenModel):
     controls: BacktestControlsConfig
     event_study: EventStudyConfig
 
+
+class ProductionDatabaseConfig(FrozenModel):
+    require_migrations_current: bool = True
+    startup_healthcheck: bool = True
+
+
+class ProductionRecoveryConfig(FrozenModel):
+    restore_position_runtime_state: bool = True
+    restore_alert_cooldowns: bool = True
+    reconcile_before_graph_start: bool = True
+    fail_closed_on_recovery_error: bool = True
+
+
+class ProductionCheckpointConfig(FrozenModel):
+    backend: Literal["memory", "sqlite", "postgres"] = "postgres"
+    sqlite_path: str = "data/langgraph-checkpoints.sqlite"
+    retention_days: int = Field(gt=0, le=3650)
+    require_strict_serialization: bool = True
+
+
+class ProductionObservabilityConfig(FrozenModel):
+    structured_json_logs: bool = True
+    metrics_enabled: bool = True
+    audit_events_enabled: bool = True
+
+
+class ProductionCircuitBreakerConfig(FrozenModel):
+    max_consecutive_runtime_errors: int = Field(gt=0)
+    max_stale_runs: int = Field(gt=0)
+    max_reconciliation_failures: int = Field(gt=0)
+    max_execution_errors: int = Field(gt=0)
+
+
+class ProductionServiceConfig(FrozenModel):
+    run_mode: Literal["oneshot", "daemon"] = "oneshot"
+    healthcheck_enabled: bool = True
+
+
+class ProductionConfig(FrozenModel):
+    database: ProductionDatabaseConfig
+    recovery: ProductionRecoveryConfig
+    checkpoints: ProductionCheckpointConfig
+    observability: ProductionObservabilityConfig
+    circuit_breakers: ProductionCircuitBreakerConfig
+    service: ProductionServiceConfig
+
 class RuntimeConfig(FrozenModel):
     version: str
     environment: Literal["development", "paper", "shadow", "live"]
@@ -637,6 +683,7 @@ class RuntimeConfig(FrozenModel):
     news: NewsConfig
     runtime: RuntimeOperationsConfig
     backtest: BacktestConfig
+    production: ProductionConfig
 
     @model_validator(mode="after")
     def cross_validate(self):

@@ -1,0 +1,31 @@
+production:
+  database:
+    require_migrations_current: true
+    startup_healthcheck: true
+
+  recovery:
+    restore_position_runtime_state: true
+    restore_alert_cooldowns: true
+    reconcile_before_graph_start: true
+    fail_closed_on_recovery_error: true
+
+  checkpoints:
+    backend: "postgres"
+    sqlite_path: "data/langgraph-checkpoints.sqlite"
+    retention_days: 30
+    require_strict_serialization: true
+
+  observability:
+    structured_json_logs: true
+    metrics_enabled: true
+    audit_events_enabled: true
+
+  circuit_breakers:
+    max_consecutive_runtime_errors: 3
+    max_stale_runs: 2
+    max_reconciliation_failures: 1
+    max_execution_errors: 2
+
+  service:
+    run_mode: "oneshot"
+    healthcheck_enabled: true

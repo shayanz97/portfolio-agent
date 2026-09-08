@@ -1,76 +1,90 @@
 # Portfolio Agent
 
-## Milestone 9 — Backtesting & Event Study Engine
+## Milestone 10 — Production Hardening
 
 Implemented:
-- separate historical backtest path outside LangGraph
-- historical feed
-- history slicing up to simulated timestamp
-- explicit look-ahead protection by construction
-- execution simulator
-- latency in bars
-- spread model
-- slippage model
-- fixed and percentage commissions
-- simulated portfolio
-- cash and position accounting
-- mark-to-market equity curve
-- trade P&L tracking
-- backtest metrics:
-  - total return
-  - max drawdown
-  - trade count
-  - win rate
-  - gross profit/loss
-  - profit factor
-  - commissions
-  - slippage
-- event-study engine
-- T+15m / T+1h / T+4h / T+12h / T+24h / T+72h support through config
-- per-event return outcomes
-- event-study summaries with minimum event count
-- runnable demo
+- production configuration
+- SQLAlchemy repositories for runtime position state and graph/run state
+- startup recovery service
+- broker reconciliation before graph start
+- fail-closed startup behavior
+- production circuit-breaker counters
+- structured JSON audit logger
+- in-memory metrics facade
+- database healthcheck
+- Alembic migration environment
+- SQLite batch-migration support
+- durable LangGraph checkpointer factory:
+  - memory
+  - SQLite
+  - PostgreSQL
+- Postgres checkpoint setup hook
+- deployable CLI/service entrypoint
+- `healthcheck`
+- `init-db`
+- `show-config`
+- tests for repository roundtrip, startup recovery and circuit-breaker behavior
 
-### Architecture rule
+### Durable LangGraph persistence
 
-Backtesting does not execute LangGraph.
+Production target:
+`PostgresSaver`
 
-The historical simulator and the live/paper runtime share the deterministic
-Strategy Core, but execution, time and data delivery are replaced by historical
-implementations.
+Local/dev option:
+`SqliteSaver`
 
-### Look-ahead protection
+The application keeps LangGraph workflow checkpoints separate from domain
+persistence. Strategy runs, positions, orders, fills, alerts and performance
+remain ordinary domain database records.
 
-The strategy callback receives only:
+### Startup sequence
 
-`history_until(current_simulated_time)`
+1. load and validate configuration
+2. check database connectivity
+3. verify/apply migrations
+4. restore runtime position state
+5. restore alert/risk state
+6. reconcile domain state against IBKR
+7. fail closed on mismatch
+8. create durable LangGraph checkpointer
+9. compile graph
+10. permit analysis/paper execution
 
-Future bars are never passed to the strategy callback.
+### Database migrations
 
-Execution happens on a later bar according to configured latency, rather than at
-the signal bar itself.
+Alembic is configured against SQLAlchemy `Base.metadata`.
 
-### Event studies
+For SQLite, batch migration mode is enabled because SQLite has limited ALTER
+TABLE support.
 
-This milestone can answer questions such as:
+Typical commands:
 
-- After confirmed Oil Shock events, what happens to BTC after 15m / 1h / 4h?
-- Does Gold react differently from Nasdaq?
-- Is the average response statistically useful across enough events?
-- Does the sign of the reaction remain consistent over different horizons?
+```bash
+alembic revision --autogenerate -m "schema update"
+alembic upgrade head
+```
 
-### Current limitations
+### Service commands
 
-- single-instrument runner is implemented first
-- no futures-roll cost model yet
-- no FX conversion model yet
-- no borrow/short model yet
-- no partial-fill model yet
-- event studies currently summarize descriptive outcomes, not statistical significance
-- commissions/slippage are simplified configurable assumptions
+```bash
+portfolio-agent healthcheck
+portfolio-agent init-db
+portfolio-agent show-config
+```
 
-## Next milestone
+### Remaining work before real deployment
 
-Milestone 10: Production Hardening & Persistent Runtime — real repositories,
-startup recovery, durable LangGraph checkpoints, database migrations,
-observability, circuit-breaker hardening and deployable service entrypoint.
+- wire real IBKR TWS facade callbacks
+- wire real market/news providers
+- replace in-memory alert registry with DB repository
+- store fill/execution lifecycle persistently end-to-end
+- configure PostgreSQL in deployment
+- run real Alembic revisions instead of `create_all`
+- add external metrics backend (Prometheus/OpenTelemetry)
+- add secrets manager
+- add container/systemd deployment files
+- perform paper-account soak testing
+- perform restart/recovery chaos tests
+
+At this point the architecture is feature-complete enough to begin real provider
+integration and long-running paper validation.
