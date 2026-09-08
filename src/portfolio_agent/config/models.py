@@ -1,0 +1,717 @@
+from __future__ import annotations
+
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+
+class FrozenModel(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+
+class AssetConfig(FrozenModel):
+    symbol: str
+    asset_class: str
+    enabled: bool = True
+    trade_enabled: bool = False
+    provider: str
+    currency: str = "USD"
+    market: str
+    session: str
+
+
+class DataQualityRules(FrozenModel):
+    max_spread_pct: float = Field(gt=0, le=1)
+    reject_non_positive_prices: bool = True
+    reject_missing_timestamp: bool = True
+
+
+class MarketSessionConfig(FrozenModel):
+    timezone: str
+    kind: Literal[
+        "always_open",
+        "always_available",
+        "weekday_session",
+        "nearly_24h_weekday",
+    ]
+    regular_open: str | None = None
+    regular_close: str | None = None
+    premarket_open: str | None = None
+    afterhours_close: str | None = None
+    daily_break_start: str | None = None
+    daily_break_end: str | None = None
+
+    @model_validator(mode="after")
+    def validate_required_fields(self):
+        if self.kind == "weekday_session":
+            required = [
+                self.regular_open,
+                self.regular_close,
+                self.premarket_open,
+                self.afterhours_close,
+            ]
+            if any(v is None for v in required):
+                raise ValueError("weekday_session requires all equity session times")
+
+        if self.kind == "nearly_24h_weekday":
+            if self.daily_break_start is None or self.daily_break_end is None:
+                raise ValueError("nearly_24h_weekday requires daily break times")
+        return self
+
+
+class MarketDataConfig(FrozenModel):
+    provider_priority: list[str]
+    allow_fallback: bool = True
+    reject_future_timestamps_seconds: int = Field(ge=0, le=300)
+    staleness_seconds: dict[str, int]
+    quality: DataQualityRules
+    sessions: dict[str, MarketSessionConfig]
+
+    @model_validator(mode="after")
+    def validate_staleness(self):
+        if not self.provider_priority:
+            raise ValueError("provider_priority must not be empty")
+        if any(v <= 0 for v in self.staleness_seconds.values()):
+            raise ValueError("all staleness thresholds must be > 0")
+        return self
+
+
+class OilWindowConfig(FrozenModel):
+    watch_pct: float = Field(gt=0)
+    high_pct: float = Field(gt=0)
+
+    @model_validator(mode="after")
+    def validate_threshold_order(self):
+        if self.high_pct <= self.watch_pct:
+            raise ValueError("high_pct must be greater than watch_pct")
+        return self
+
+
+class VolatilityAdjustedConfig(FrozenModel):
+    enabled: bool = True
+    watch_zscore: float = Field(gt=0)
+    high_zscore: float = Field(gt=0)
+    extreme_zscore: float = Field(gt=0)
+
+    @model_validator(mode="after")
+    def validate_order(self):
+        if not self.watch_zscore < self.high_zscore < self.extreme_zscore:
+            raise ValueError("z-score thresholds must satisfy watch < high < extreme")
+        return self
+
+
+class OilConfirmationConfig(FrozenModel):
+    require_wti_brent: bool = True
+    minimum_confirmation_score: float = Field(ge=0, le=1)
+
+
+class OilShockConfig(FrozenModel):
+    enabled: bool = True
+    windows: dict[str, OilWindowConfig]
+    volatility_adjusted: VolatilityAdjustedConfig
+    confirmation: OilConfirmationConfig
+
+
+class ShockConfig(FrozenModel):
+    enabled: bool = True
+    watch_zscore: float = Field(gt=0)
+    high_zscore: float = Field(gt=0)
+
+    @model_validator(mode="after")
+    def validate_order(self):
+        if self.high_zscore <= self.watch_zscore:
+            raise ValueError("high_zscore must be greater than watch_zscore")
+        return self
+
+
+class SignalThresholds(FrozenModel):
+    strong_buy: float = Field(gt=0, le=1)
+    buy: float = Field(gt=0, le=1)
+    reduce: float = Field(ge=-1, lt=0)
+    exit: float = Field(ge=-1, lt=0)
+
+    @model_validator(mode="after")
+    def validate_order(self):
+        if self.strong_buy <= self.buy:
+            raise ValueError("strong_buy must be greater than buy")
+        if self.exit >= self.reduce:
+            raise ValueError("exit must be less than reduce")
+        return self
+
+
+class SignalWeights(FrozenModel):
+    macro: float = Field(ge=0, le=1)
+    momentum: float = Field(ge=0, le=1)
+    technical: float = Field(ge=0, le=1)
+    volatility: float = Field(ge=0, le=1)
+    event: float = Field(ge=0, le=1)
+    news: float = Field(ge=0, le=1)
+
+    @model_validator(mode="after")
+    def weights_sum_to_one(self):
+        total = (
+            self.macro + self.momentum + self.technical
+            + self.volatility + self.event + self.news
+        )
+        if abs(total - 1.0) > 1e-9:
+            raise ValueError(f"signal weights must sum to 1.0, got {total}")
+        return self
+
+
+class ProfitProtectionConfig(FrozenModel):
+    enabled: bool
+    activate_after_profit_pct: float = Field(ge=0, le=1)
+    max_profit_giveback_pct: float = Field(ge=0, le=1)
+    atr_warning_multiple: float = Field(gt=0)
+
+
+class PartialProfitConfig(FrozenModel):
+    enabled: bool
+    first_trigger_profit_pct: float = Field(ge=0, le=5)
+    first_sell_pct: float = Field(gt=0, le=1)
+
+
+class TrailingStopConfig(FrozenModel):
+    enabled: bool
+    atr_multiplier: float = Field(gt=0)
+
+
+class AveragingDownConfig(FrozenModel):
+    enabled: bool
+    require_thesis_intact: bool
+    require_stabilization: bool
+    max_add_events: int = Field(ge=0, le=10)
+    max_total_add_pct: float = Field(ge=0, le=2)
+    max_position_weight_after_add: float = Field(gt=0, le=1)
+
+
+class CooldownConfig(FrozenModel):
+    minimum_days_between_reversals: int = Field(ge=0)
+    signal_hysteresis: float = Field(ge=0, le=1)
+
+
+class PositionManagementConfig(FrozenModel):
+    enabled: bool
+    profit_protection: ProfitProtectionConfig
+    partial_profit: PartialProfitConfig
+    trailing_stop: TrailingStopConfig
+    thesis: ThesisConfig
+    recovery: RecoveryConfig
+    averaging_down: AveragingDownConfig
+    cooldown: CooldownConfig
+
+
+class PortfolioLimits(FrozenModel):
+    max_single_asset_weight: float = Field(gt=0, le=1)
+    max_crypto_weight: float = Field(ge=0, le=1)
+    max_equity_weight: float = Field(ge=0, le=1)
+    max_precious_metals_weight: float = Field(ge=0, le=1)
+    max_energy_weight: float = Field(ge=0, le=1)
+    min_cash_weight: float = Field(ge=0, le=1)
+    max_rebalance_per_run: float = Field(gt=0, le=1)
+
+
+class TradeRiskConfig(FrozenModel):
+    max_risk_per_trade: float = Field(gt=0, le=0.10)
+    max_total_open_risk: float = Field(gt=0, le=0.50)
+    minimum_risk_reward: float = Field(gt=0)
+    maximum_open_positions: int = Field(gt=0)
+
+
+class StopLossConfig(FrozenModel):
+    atr_enabled: bool
+    atr_multiplier: float = Field(gt=0)
+    technical_support_enabled: bool
+    maximum_loss_pct: float = Field(gt=0, le=1)
+
+
+class TpLevel(FrozenModel):
+    r_multiple: float = Field(gt=0)
+    close_pct: float = Field(gt=0, le=1)
+
+
+class TrailingTakeProfit(FrozenModel):
+    enabled: bool
+    remaining_pct: float = Field(ge=0, le=1)
+
+
+class TakeProfitConfig(FrozenModel):
+    tp1: TpLevel
+    tp2: TpLevel
+    trailing: TrailingTakeProfit
+
+    @model_validator(mode="after")
+    def validate_allocations(self):
+        total = self.tp1.close_pct + self.tp2.close_pct + self.trailing.remaining_pct
+        if abs(total - 1.0) > 1e-9:
+            raise ValueError(f"take-profit allocations must sum to 1.0, got {total}")
+        if self.tp2.r_multiple <= self.tp1.r_multiple:
+            raise ValueError("tp2.r_multiple must be greater than tp1.r_multiple")
+        return self
+
+
+class MarginConfig(FrozenModel):
+    max_margin_utilization: float = Field(gt=0, le=1)
+    minimum_margin_buffer: float = Field(ge=0, le=1)
+
+
+class CircuitBreakerConfig(FrozenModel):
+    daily_loss_pct: float = Field(gt=0, le=1)
+    max_drawdown_pct: float = Field(gt=0, le=1)
+    stale_market_data_seconds: int = Field(gt=0)
+    max_order_rejections: int = Field(gt=0)
+    disable_on_broker_disconnect: bool
+    disable_on_portfolio_mismatch: bool
+
+
+class LiveTradingConfig(FrozenModel):
+    enabled: bool = False
+    require_cli_flag: bool = True
+    require_environment_variable: bool = True
+
+
+class ExecutionConfig(FrozenModel):
+    environment: Literal["development", "paper", "shadow", "live"]
+    broker: Literal["mock", "ibkr"]
+    automatic_execution: bool
+    human_approval_required: bool
+    market_orders_allowed: bool
+    limit_orders_only: bool
+    maximum_order_value_eur: float = Field(gt=0)
+    daily_trade_limit: int = Field(gt=0)
+    live_trading: LiveTradingConfig
+
+    @model_validator(mode="after")
+    def block_unsafe_live_defaults(self):
+        if self.environment == "live" and not self.live_trading.enabled:
+            raise ValueError("environment=live requires live_trading.enabled=true")
+        if self.market_orders_allowed and self.limit_orders_only:
+            raise ValueError("market_orders_allowed and limit_orders_only cannot both be true")
+        return self
+
+
+
+class AtrFeatureConfig(FrozenModel):
+    enabled: bool = True
+    period: int = Field(gt=1, le=500)
+
+
+class RealizedVolatilityConfig(FrozenModel):
+    enabled: bool = True
+    period: int = Field(gt=1, le=500)
+    annualization_factor: float = Field(gt=0)
+
+
+class ZScoreFeatureConfig(FrozenModel):
+    enabled: bool = True
+    period: int = Field(gt=2, le=1000)
+    minimum_samples: int = Field(gt=2, le=1000)
+
+    @model_validator(mode="after")
+    def validate_samples(self):
+        if self.minimum_samples > self.period:
+            raise ValueError("zscore.minimum_samples cannot exceed period")
+        return self
+
+
+class MomentumFeatureConfig(FrozenModel):
+    enabled: bool = True
+    short_window: int = Field(gt=0)
+    long_window: int = Field(gt=1)
+
+    @model_validator(mode="after")
+    def validate_windows(self):
+        if self.short_window >= self.long_window:
+            raise ValueError("momentum.short_window must be < long_window")
+        return self
+
+
+class CorrelationFeatureConfig(FrozenModel):
+    enabled: bool = True
+    period: int = Field(gt=2, le=1000)
+    minimum_samples: int = Field(gt=2, le=1000)
+
+
+class RelativeStrengthFeatureConfig(FrozenModel):
+    enabled: bool = True
+    window: int = Field(gt=1, le=1000)
+
+
+class OilShockScoringConfig(FrozenModel):
+    return_weight: float = Field(ge=0, le=1)
+    zscore_weight: float = Field(ge=0, le=1)
+    confirmation_weight: float = Field(ge=0, le=1)
+    volatility_weight: float = Field(ge=0, le=1)
+
+    @model_validator(mode="after")
+    def validate_weights(self):
+        total = (
+            self.return_weight
+            + self.zscore_weight
+            + self.confirmation_weight
+            + self.volatility_weight
+        )
+        if abs(total - 1.0) > 1e-9:
+            raise ValueError("oil shock scoring weights must sum to 1.0")
+        return self
+
+
+class FeaturesConfig(FrozenModel):
+    return_windows: list[str]
+    atr: AtrFeatureConfig
+    realized_volatility: RealizedVolatilityConfig
+    zscore: ZScoreFeatureConfig
+    momentum: MomentumFeatureConfig
+    correlation: CorrelationFeatureConfig
+    relative_strength: RelativeStrengthFeatureConfig
+    oil_shock_scoring: OilShockScoringConfig
+
+
+
+class IbkrConnectionConfig(FrozenModel):
+    host: str
+    paper_tws_port: int = Field(gt=0, lt=65536)
+    paper_gateway_port: int = Field(gt=0, lt=65536)
+    live_tws_port: int = Field(gt=0, lt=65536)
+    live_gateway_port: int = Field(gt=0, lt=65536)
+    client_id: int = Field(ge=0)
+    connect_timeout_seconds: int = Field(gt=0)
+    heartbeat_seconds: int = Field(gt=0)
+    reconnect_attempts: int = Field(ge=0)
+    reconnect_backoff_seconds: int = Field(ge=0)
+
+class IbkrAccountConfig(FrozenModel):
+    base_currency: str = "EUR"
+    require_single_account: bool = False
+
+class IbkrReconciliationConfig(FrozenModel):
+    enabled: bool = True
+    quantity_tolerance: float = Field(ge=0)
+    cash_tolerance: float = Field(ge=0)
+    fail_closed: bool = True
+
+class IbkrOrdersConfig(FrozenModel):
+    default_tif: Literal["DAY", "GTC"] = "DAY"
+    acknowledge_timeout_seconds: int = Field(gt=0)
+    status_timeout_seconds: int = Field(gt=0)
+    allow_fractional: bool = True
+    transmit: bool = True
+
+class IbkrConfig(FrozenModel):
+    enabled: bool = True
+    connection: IbkrConnectionConfig
+    account: IbkrAccountConfig
+    reconciliation: IbkrReconciliationConfig
+    orders: IbkrOrdersConfig
+
+class BrokerConfig(FrozenModel):
+    ibkr: IbkrConfig
+
+
+class RegimeThresholdsConfig(FrozenModel):
+    risk_on: float = Field(ge=-1, le=1)
+    risk_off: float = Field(ge=-1, le=1)
+    inflation_shock: float = Field(ge=-1, le=1)
+    crisis: float = Field(ge=-1, le=1)
+
+    @model_validator(mode="after")
+    def validate_order(self):
+        if not self.crisis < self.inflation_shock < self.risk_off < self.risk_on:
+            raise ValueError("regime thresholds must satisfy crisis < inflation_shock < risk_off < risk_on")
+        return self
+
+
+class RegimeWeightsConfig(FrozenModel):
+    equities: float = Field(ge=0, le=1)
+    crypto: float = Field(ge=0, le=1)
+    volatility: float = Field(ge=0, le=1)
+    dollar: float = Field(ge=0, le=1)
+    yields: float = Field(ge=0, le=1)
+    oil_event: float = Field(ge=0, le=1)
+
+    @model_validator(mode="after")
+    def validate_sum(self):
+        total = self.equities + self.crypto + self.volatility + self.dollar + self.yields + self.oil_event
+        if abs(total - 1.0) > 1e-9:
+            raise ValueError("regime weights must sum to 1.0")
+        return self
+
+
+class InflationShockConfig(FrozenModel):
+    require_oil_event: bool = True
+    min_oil_score: float = Field(ge=0, le=100)
+    require_yields_up: bool = True
+
+
+class RegimeConfig(FrozenModel):
+    thresholds: RegimeThresholdsConfig
+    weights: RegimeWeightsConfig
+    inflation_shock: InflationShockConfig
+
+
+class TechnicalDefaultsConfig(FrozenModel):
+    bullish_momentum_threshold: float = Field(ge=-1, le=1)
+    bearish_momentum_threshold: float = Field(ge=-1, le=1)
+    high_volatility_threshold: float = Field(gt=0)
+
+
+class ThesisConfig(FrozenModel):
+    healthy_threshold: float = Field(ge=0, le=100)
+    weakening_threshold: float = Field(ge=0, le=100)
+
+    @model_validator(mode="after")
+    def validate_order(self):
+        if self.weakening_threshold >= self.healthy_threshold:
+            raise ValueError("thesis weakening threshold must be below healthy threshold")
+        return self
+
+
+class RecoveryConfig(FrozenModel):
+    minimum_score_to_watch: float = Field(ge=0, le=100)
+    minimum_score_to_add: float = Field(ge=0, le=100)
+
+    @model_validator(mode="after")
+    def validate_order(self):
+        if self.minimum_score_to_watch >= self.minimum_score_to_add:
+            raise ValueError("recovery watch threshold must be below add threshold")
+        return self
+
+
+class SignalAdjustmentConfig(FrozenModel):
+    strong_buy: float
+    buy: float
+    reduce: float
+    exit: float
+
+
+class RebalanceConfig(FrozenModel):
+    minimum_weight_change: float = Field(ge=0, le=1)
+    respect_max_rebalance_per_run: bool = True
+
+
+class PortfolioTargetsConfig(FrozenModel):
+    regimes: dict[str, dict[str, float]]
+    signal_adjustment: SignalAdjustmentConfig
+    rebalance: RebalanceConfig
+
+    @model_validator(mode="after")
+    def validate_regime_allocations(self):
+        for name, weights in self.regimes.items():
+            total = sum(weights.values())
+            if abs(total - 1.0) > 1e-9:
+                raise ValueError(f"portfolio target weights for {name} must sum to 1.0")
+        return self
+
+
+class WorkflowConfig(FrozenModel):
+    require_approval_for_any_trade: bool = True
+    persist_no_action_runs: bool = True
+    stop_on_reconciliation_failure: bool = True
+    stop_on_market_data_failure: bool = True
+    max_trade_proposals_per_run: int = Field(gt=0, le=100)
+    default_thread_prefix: str = "portfolio-agent"
+
+
+class NewsIngestionConfig(FrozenModel):
+    max_items_per_run: int = Field(gt=0, le=1000)
+    max_age_minutes: int = Field(gt=0, le=10080)
+    language_allowlist: list[str]
+
+
+class NewsDedupConfig(FrozenModel):
+    title_similarity_threshold: float = Field(ge=0, le=1)
+    content_hash_enabled: bool = True
+
+
+class NewsEvidenceConfig(FrozenModel):
+    minimum_items: int = Field(gt=0, le=50)
+    minimum_weighted_score: float = Field(gt=0)
+    conflicting_score_threshold: float = Field(ge=0, le=1)
+    require_independent_domains: int = Field(gt=0, le=20)
+
+
+class NewsClassificationConfig(FrozenModel):
+    allowed_causes: list[str]
+    minimum_confidence: float = Field(ge=0, le=1)
+
+
+class NewsConfig(FrozenModel):
+    enabled: bool = True
+    ingestion: NewsIngestionConfig
+    deduplication: NewsDedupConfig
+    evidence: NewsEvidenceConfig
+    source_weights: dict[str, float]
+    classification: NewsClassificationConfig
+
+
+class SchedulingConfig(FrozenModel):
+    enabled: bool = True
+    default_interval_minutes: int = Field(gt=0, le=1440)
+
+
+class PositionTrackingRuntimeConfig(FrozenModel):
+    persist_high_water_marks: bool = True
+    persist_low_water_marks: bool = True
+    update_on_every_run: bool = True
+
+
+class AlertRuntimeConfig(FrozenModel):
+    enabled: bool = True
+    minimum_severity: Literal["INFO", "WATCH", "IMPORTANT", "CRITICAL"] = "IMPORTANT"
+    cooldown_minutes: int = Field(ge=0, le=10080)
+    notify_on_states: list[str]
+
+
+class PerformanceRuntimeConfig(FrozenModel):
+    enabled: bool = True
+    calculate_on_every_run: bool = True
+    rolling_window_runs: int = Field(gt=1, le=10000)
+
+
+class RuntimeOperationsConfig(FrozenModel):
+    scheduling: SchedulingConfig
+    position_tracking: PositionTrackingRuntimeConfig
+    alerts: AlertRuntimeConfig
+    performance: PerformanceRuntimeConfig
+
+
+class BacktestExecutionConfig(FrozenModel):
+    commission_fixed: float = Field(ge=0)
+    commission_pct: float = Field(ge=0, le=0.1)
+    slippage_bps: float = Field(ge=0, le=1000)
+    spread_bps: float = Field(ge=0, le=1000)
+    latency_bars: int = Field(ge=0, le=1000)
+
+
+class BacktestCapitalConfig(FrozenModel):
+    initial_cash: float = Field(gt=0)
+
+
+class BacktestControlsConfig(FrozenModel):
+    prohibit_lookahead: bool = True
+    require_time_ordered_data: bool = True
+    allow_fractional: bool = True
+
+
+class EventStudyConfig(FrozenModel):
+    horizons_minutes: list[int]
+    minimum_events: int = Field(gt=0)
+
+
+class BacktestConfig(FrozenModel):
+    enabled: bool = True
+    execution: BacktestExecutionConfig
+    capital: BacktestCapitalConfig
+    controls: BacktestControlsConfig
+    event_study: EventStudyConfig
+
+
+class ProductionDatabaseConfig(FrozenModel):
+    require_migrations_current: bool = True
+    startup_healthcheck: bool = True
+
+
+class ProductionRecoveryConfig(FrozenModel):
+    restore_position_runtime_state: bool = True
+    restore_alert_cooldowns: bool = True
+    reconcile_before_graph_start: bool = True
+    fail_closed_on_recovery_error: bool = True
+
+
+class ProductionCheckpointConfig(FrozenModel):
+    backend: Literal["memory", "sqlite", "postgres"] = "postgres"
+    sqlite_path: str = "data/langgraph-checkpoints.sqlite"
+    retention_days: int = Field(gt=0, le=3650)
+    require_strict_serialization: bool = True
+
+
+class ProductionObservabilityConfig(FrozenModel):
+    structured_json_logs: bool = True
+    metrics_enabled: bool = True
+    audit_events_enabled: bool = True
+
+
+class ProductionCircuitBreakerConfig(FrozenModel):
+    max_consecutive_runtime_errors: int = Field(gt=0)
+    max_stale_runs: int = Field(gt=0)
+    max_reconciliation_failures: int = Field(gt=0)
+    max_execution_errors: int = Field(gt=0)
+
+
+class ProductionServiceConfig(FrozenModel):
+    run_mode: Literal["oneshot", "daemon"] = "oneshot"
+    healthcheck_enabled: bool = True
+
+
+class ProductionConfig(FrozenModel):
+    database: ProductionDatabaseConfig
+    recovery: ProductionRecoveryConfig
+    checkpoints: ProductionCheckpointConfig
+    observability: ProductionObservabilityConfig
+    circuit_breakers: ProductionCircuitBreakerConfig
+    service: ProductionServiceConfig
+
+class RuntimeConfig(FrozenModel):
+    version: str
+    environment: Literal["development", "paper", "shadow", "live"]
+
+    assets: dict[str, AssetConfig]
+    market_data: MarketDataConfig
+    features: FeaturesConfig
+    regime: RegimeConfig
+
+    oil_shock: OilShockConfig
+    volatility_shock: ShockConfig
+    crypto_shock: ShockConfig
+
+    signal_thresholds: SignalThresholds
+    signal_weights: SignalWeights
+    position_management: PositionManagementConfig
+    technical_defaults: TechnicalDefaultsConfig
+    portfolio_targets: PortfolioTargetsConfig
+
+    portfolio: PortfolioLimits
+    trade_risk: TradeRiskConfig
+    stop_loss: StopLossConfig
+    take_profit: TakeProfitConfig
+    margin: MarginConfig
+    circuit_breakers: CircuitBreakerConfig
+
+    execution: ExecutionConfig
+    broker: BrokerConfig
+    workflow: WorkflowConfig
+    news: NewsConfig
+    runtime: RuntimeOperationsConfig
+    backtest: BacktestConfig
+    production: ProductionConfig
+
+    @model_validator(mode="after")
+    def cross_validate(self):
+        if self.environment != self.execution.environment:
+            raise ValueError("top-level environment must match execution.environment")
+
+        if self.position_management.averaging_down.max_position_weight_after_add > (
+            self.portfolio.max_single_asset_weight
+        ):
+            raise ValueError(
+                "averaging_down.max_position_weight_after_add "
+                "cannot exceed portfolio.max_single_asset_weight"
+            )
+
+        unknown_sessions = {
+            asset.session for asset in self.assets.values()
+            if asset.session not in self.market_data.sessions
+        }
+        if unknown_sessions:
+            raise ValueError(f"assets reference unknown sessions: {sorted(unknown_sessions)}")
+
+        missing_staleness = {
+            asset.asset_class for asset in self.assets.values()
+            if asset.asset_class not in self.market_data.staleness_seconds
+        }
+        if missing_staleness:
+            raise ValueError(
+                f"missing market-data staleness thresholds for: {sorted(missing_staleness)}"
+            )
+
+        return self

@@ -1,0 +1,120 @@
+assets:
+  WTI:
+    symbol: "CL"
+    asset_class: "oil"
+    enabled: true
+    trade_enabled: false
+    provider: "future"
+    currency: "USD"
+    market: "NYMEX"
+    session: "FUTURES_APPROX"
+
+  BRENT:
+    symbol: "BZ"
+    asset_class: "oil"
+    enabled: true
+    trade_enabled: false
+    provider: "future"
+    currency: "USD"
+    market: "NYMEX"
+    session: "FUTURES_APPROX"
+
+  GOLD:
+    symbol: "GC"
+    asset_class: "precious_metal"
+    enabled: true
+    trade_enabled: false
+    provider: "future"
+    currency: "USD"
+    market: "COMEX"
+    session: "FUTURES_APPROX"
+
+  SILVER:
+    symbol: "SI"
+    asset_class: "precious_metal"
+    enabled: true
+    trade_enabled: false
+    provider: "future"
+    currency: "USD"
+    market: "COMEX"
+    session: "FUTURES_APPROX"
+
+  BTC:
+    symbol: "BTC"
+    asset_class: "crypto"
+    enabled: true
+    trade_enabled: false
+    provider: "crypto"
+    currency: "USD"
+    market: "CRYPTO"
+    session: "CRYPTO_24_7"
+
+  ETH:
+    symbol: "ETH"
+    asset_class: "crypto"
+    enabled: true
+    trade_enabled: false
+    provider: "crypto"
+    currency: "USD"
+    market: "CRYPTO"
+    session: "CRYPTO_24_7"
+
+  SOL:
+    symbol: "SOL"
+    asset_class: "crypto"
+    enabled: true
+    trade_enabled: false
+    provider: "crypto"
+    currency: "USD"
+    market: "CRYPTO"
+    session: "CRYPTO_24_7"
+
+  SPY:
+    symbol: "SPY"
+    asset_class: "equity"
+    enabled: true
+    trade_enabled: true
+    provider: "ibkr"
+    currency: "USD"
+    market: "NYSE_ARCA"
+    session: "US_EQUITY"
+
+  QQQ:
+    symbol: "QQQ"
+    asset_class: "equity"
+    enabled: true
+    trade_enabled: true
+    provider: "ibkr"
+    currency: "USD"
+    market: "NASDAQ"
+    session: "US_EQUITY"
+
+  VIX:
+    symbol: "VIX"
+    asset_class: "volatility"
+    enabled: true
+    trade_enabled: false
+    provider: "macro"
+    currency: "USD"
+    market: "CBOE"
+    session: "US_EQUITY"
+
+  DXY:
+    symbol: "DXY"
+    asset_class: "macro"
+    enabled: true
+    trade_enabled: false
+    provider: "macro"
+    currency: "USD"
+    market: "MACRO"
+    session: "MACRO_CONTINUOUS"
+
+  US10Y:
+    symbol: "US10Y"
+    asset_class: "rates"
+    enabled: true
+    trade_enabled: false
+    provider: "macro"
+    currency: "USD"
+    market: "MACRO"
+    session: "MACRO_CONTINUOUS"

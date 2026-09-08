@@ -1,0 +1,32 @@
+[project]
+name = "portfolio-agent"
+version = "1.0.0"
+description = "LangGraph-based portfolio monitoring and paper-trading agent"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.8,<3",
+    "pydantic-settings>=2.4,<3",
+    "PyYAML>=6.0,<7",
+    "SQLAlchemy>=2.0,<3",
+    "alembic>=1.19,<2",
+    "langgraph>=1.0,<2",
+    "langgraph-checkpoint-postgres>=2,<3",
+    "langgraph-checkpoint-sqlite>=2,<3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8,<9",
+    "ruff>=0.6",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[project.scripts]
+portfolio-agent = "portfolio_agent.service:main"

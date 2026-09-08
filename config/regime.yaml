@@ -1,0 +1,19 @@
+regime:
+  thresholds:
+    risk_on: 0.35
+    risk_off: -0.35
+    inflation_shock: -0.55
+    crisis: -0.75
+
+  weights:
+    equities: 0.20
+    crypto: 0.15
+    volatility: 0.20
+    dollar: 0.10
+    yields: 0.10
+    oil_event: 0.25
+
+  inflation_shock:
+    require_oil_event: true
+    min_oil_score: 60.0
+    require_yields_up: true

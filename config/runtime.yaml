@@ -1,0 +1,25 @@
+runtime:
+  scheduling:
+    enabled: true
+    default_interval_minutes: 15
+
+  position_tracking:
+    persist_high_water_marks: true
+    persist_low_water_marks: true
+    update_on_every_run: true
+
+  alerts:
+    enabled: true
+    minimum_severity: "IMPORTANT"
+    cooldown_minutes: 60
+    notify_on_states:
+      - PROFIT_AT_RISK
+      - THESIS_WEAKENING
+      - THESIS_BROKEN
+      - RECOVERY_CONFIRMED
+      - EXIT_CANDIDATE
+
+  performance:
+    enabled: true
+    calculate_on_every_run: true
+    rolling_window_runs: 100

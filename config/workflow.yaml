@@ -1,0 +1,7 @@
+workflow:
+  require_approval_for_any_trade: true
+  persist_no_action_runs: true
+  stop_on_reconciliation_failure: true
+  stop_on_market_data_failure: true
+  max_trade_proposals_per_run: 10
+  default_thread_prefix: "portfolio-agent"

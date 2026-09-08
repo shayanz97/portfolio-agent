@@ -1,0 +1,47 @@
+market_data:
+  provider_priority:
+    - mock
+    - ibkr
+    - crypto
+    - macro
+    - historical
+
+  allow_fallback: true
+  reject_future_timestamps_seconds: 5
+
+  staleness_seconds:
+    crypto: 30
+    equity: 60
+    oil: 60
+    precious_metal: 60
+    volatility: 120
+    macro: 300
+    rates: 300
+
+  quality:
+    max_spread_pct: 0.05
+    reject_non_positive_prices: true
+    reject_missing_timestamp: true
+
+  sessions:
+    CRYPTO_24_7:
+      timezone: "UTC"
+      kind: "always_open"
+
+    US_EQUITY:
+      timezone: "America/New_York"
+      kind: "weekday_session"
+      regular_open: "09:30"
+      regular_close: "16:00"
+      premarket_open: "04:00"
+      afterhours_close: "20:00"
+
+    FUTURES_APPROX:
+      timezone: "America/New_York"
+      kind: "nearly_24h_weekday"
+      daily_break_start: "17:00"
+      daily_break_end: "18:00"
+
+    MACRO_CONTINUOUS:
+      timezone: "UTC"
+      kind: "always_available"

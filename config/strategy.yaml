@@ -1,0 +1,56 @@
+signal_thresholds:
+  strong_buy: 0.60
+  buy: 0.25
+  reduce: -0.25
+  exit: -0.60
+
+signal_weights:
+  macro: 0.25
+  momentum: 0.15
+  technical: 0.15
+  volatility: 0.10
+  event: 0.20
+  news: 0.15
+
+technical_defaults:
+  bullish_momentum_threshold: 0.10
+  bearish_momentum_threshold: -0.10
+  high_volatility_threshold: 0.50
+
+position_management:
+  enabled: true
+
+  profit_protection:
+    enabled: true
+    activate_after_profit_pct: 0.12
+    max_profit_giveback_pct: 0.30
+    atr_warning_multiple: 1.5
+
+  partial_profit:
+    enabled: true
+    first_trigger_profit_pct: 0.20
+    first_sell_pct: 0.30
+
+  trailing_stop:
+    enabled: true
+    atr_multiplier: 2.0
+
+  thesis:
+    healthy_threshold: 70.0
+    weakening_threshold: 45.0
+
+  recovery:
+    minimum_score_to_watch: 60.0
+    minimum_score_to_add: 75.0
+
+  averaging_down:
+    enabled: true
+    require_thesis_intact: true
+    require_stabilization: true
+    max_add_events: 2
+    max_total_add_pct: 0.50
+    max_position_weight_after_add: 0.12
+
+  cooldown:
+    minimum_days_between_reversals: 3
+    signal_hysteresis: 0.10

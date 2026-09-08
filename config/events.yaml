@@ -1,0 +1,30 @@
+oil_shock:
+  enabled: true
+
+  windows:
+    1h:
+      watch_pct: 1.5
+      high_pct: 3.0
+    4h:
+      watch_pct: 3.0
+      high_pct: 5.0
+
+  volatility_adjusted:
+    enabled: true
+    watch_zscore: 2.0
+    high_zscore: 3.0
+    extreme_zscore: 4.0
+
+  confirmation:
+    require_wti_brent: true
+    minimum_confirmation_score: 0.60
+
+volatility_shock:
+  enabled: true
+  watch_zscore: 2.0
+  high_zscore: 3.0
+
+crypto_shock:
+  enabled: true
+  watch_zscore: 2.5
+  high_zscore: 4.0

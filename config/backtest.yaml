@@ -1,0 +1,27 @@
+backtest:
+  enabled: true
+
+  execution:
+    commission_fixed: 0.50
+    commission_pct: 0.0005
+    slippage_bps: 5.0
+    spread_bps: 2.0
+    latency_bars: 1
+
+  capital:
+    initial_cash: 100000.0
+
+  controls:
+    prohibit_lookahead: true
+    require_time_ordered_data: true
+    allow_fractional: true
+
+  event_study:
+    horizons_minutes:
+      - 15
+      - 60
+      - 240
+      - 720
+      - 1440
+      - 4320
+    minimum_events: 3

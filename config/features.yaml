@@ -1,0 +1,36 @@
+features:
+  return_windows: ["1m", "5m", "15m", "1h", "4h", "24h"]
+
+  atr:
+    enabled: true
+    period: 14
+
+  realized_volatility:
+    enabled: true
+    period: 20
+    annualization_factor: 365.0
+
+  zscore:
+    enabled: true
+    period: 30
+    minimum_samples: 20
+
+  momentum:
+    enabled: true
+    short_window: 5
+    long_window: 20
+
+  correlation:
+    enabled: true
+    period: 30
+    minimum_samples: 20
+
+  relative_strength:
+    enabled: true
+    window: 20
+
+  oil_shock_scoring:
+    return_weight: 0.35
+    zscore_weight: 0.30
+    confirmation_weight: 0.25
+    volatility_weight: 0.10
