@@ -365,6 +365,46 @@ class FeaturesConfig(FrozenModel):
     oil_shock_scoring: OilShockScoringConfig
 
 
+
+class IbkrConnectionConfig(FrozenModel):
+    host: str
+    paper_tws_port: int = Field(gt=0, lt=65536)
+    paper_gateway_port: int = Field(gt=0, lt=65536)
+    live_tws_port: int = Field(gt=0, lt=65536)
+    live_gateway_port: int = Field(gt=0, lt=65536)
+    client_id: int = Field(ge=0)
+    connect_timeout_seconds: int = Field(gt=0)
+    heartbeat_seconds: int = Field(gt=0)
+    reconnect_attempts: int = Field(ge=0)
+    reconnect_backoff_seconds: int = Field(ge=0)
+
+class IbkrAccountConfig(FrozenModel):
+    base_currency: str = "EUR"
+    require_single_account: bool = False
+
+class IbkrReconciliationConfig(FrozenModel):
+    enabled: bool = True
+    quantity_tolerance: float = Field(ge=0)
+    cash_tolerance: float = Field(ge=0)
+    fail_closed: bool = True
+
+class IbkrOrdersConfig(FrozenModel):
+    default_tif: Literal["DAY", "GTC"] = "DAY"
+    acknowledge_timeout_seconds: int = Field(gt=0)
+    status_timeout_seconds: int = Field(gt=0)
+    allow_fractional: bool = True
+    transmit: bool = True
+
+class IbkrConfig(FrozenModel):
+    enabled: bool = True
+    connection: IbkrConnectionConfig
+    account: IbkrAccountConfig
+    reconciliation: IbkrReconciliationConfig
+    orders: IbkrOrdersConfig
+
+class BrokerConfig(FrozenModel):
+    ibkr: IbkrConfig
+
 class RuntimeConfig(FrozenModel):
     version: str
     environment: Literal["development", "paper", "shadow", "live"]
@@ -389,6 +429,7 @@ class RuntimeConfig(FrozenModel):
     circuit_breakers: CircuitBreakerConfig
 
     execution: ExecutionConfig
+    broker: BrokerConfig
 
     @model_validator(mode="after")
     def cross_validate(self):

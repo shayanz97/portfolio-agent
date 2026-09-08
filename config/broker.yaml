@@ -1,0 +1,28 @@
+broker:
+  ibkr:
+    enabled: true
+    connection:
+      host: "127.0.0.1"
+      paper_tws_port: 7497
+      paper_gateway_port: 4002
+      live_tws_port: 7496
+      live_gateway_port: 4001
+      client_id: 10
+      connect_timeout_seconds: 10
+      heartbeat_seconds: 30
+      reconnect_attempts: 5
+      reconnect_backoff_seconds: 3
+    account:
+      base_currency: "EUR"
+      require_single_account: false
+    reconciliation:
+      enabled: true
+      quantity_tolerance: 0.000001
+      cash_tolerance: 1.00
+      fail_closed: true
+    orders:
+      default_tif: "DAY"
+      acknowledge_timeout_seconds: 15
+      status_timeout_seconds: 30
+      allow_fractional: true
+      transmit: true
