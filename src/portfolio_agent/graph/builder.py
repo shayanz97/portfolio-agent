@@ -20,6 +20,7 @@ from portfolio_agent.graph.nodes import (
     rejected_node,
     risk_and_trade_node,
     signal_node,
+    runtime_monitoring_node,
 )
 from portfolio_agent.graph.routing import (
     after_circuit_breaker,
@@ -64,6 +65,7 @@ def build_portfolio_graph(
     builder.add_node("regime", regime_node(deps))
     builder.add_node("signals", signal_node(deps))
     builder.add_node("lifecycle", lifecycle_node(deps))
+    builder.add_node("runtime_monitoring", runtime_monitoring_node(deps))
     builder.add_node("portfolio", portfolio_node(deps))
     builder.add_node("risk_and_trade", risk_and_trade_node(deps))
     builder.add_node("circuit_breaker", circuit_breaker_node(deps))
@@ -97,7 +99,8 @@ def build_portfolio_graph(
     builder.add_edge("news_intelligence", "regime")
     builder.add_edge("regime", "signals")
     builder.add_edge("signals", "lifecycle")
-    builder.add_edge("lifecycle", "portfolio")
+    builder.add_edge("lifecycle", "runtime_monitoring")
+    builder.add_edge("runtime_monitoring", "portfolio")
     builder.add_edge("portfolio", "risk_and_trade")
     builder.add_edge("risk_and_trade", "circuit_breaker")
 

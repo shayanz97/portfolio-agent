@@ -1,4 +1,4 @@
-version: "0.7.0"
+version: "0.8.0"
 environment: "paper"
 
 includes:
@@ -14,3 +14,4 @@ includes:
   - broker.yaml
   - workflow.yaml
   - news.yaml
+  - runtime.yaml

@@ -543,6 +543,37 @@ class NewsConfig(FrozenModel):
     source_weights: dict[str, float]
     classification: NewsClassificationConfig
 
+
+class SchedulingConfig(FrozenModel):
+    enabled: bool = True
+    default_interval_minutes: int = Field(gt=0, le=1440)
+
+
+class PositionTrackingRuntimeConfig(FrozenModel):
+    persist_high_water_marks: bool = True
+    persist_low_water_marks: bool = True
+    update_on_every_run: bool = True
+
+
+class AlertRuntimeConfig(FrozenModel):
+    enabled: bool = True
+    minimum_severity: Literal["INFO", "WATCH", "IMPORTANT", "CRITICAL"] = "IMPORTANT"
+    cooldown_minutes: int = Field(ge=0, le=10080)
+    notify_on_states: list[str]
+
+
+class PerformanceRuntimeConfig(FrozenModel):
+    enabled: bool = True
+    calculate_on_every_run: bool = True
+    rolling_window_runs: int = Field(gt=1, le=10000)
+
+
+class RuntimeOperationsConfig(FrozenModel):
+    scheduling: SchedulingConfig
+    position_tracking: PositionTrackingRuntimeConfig
+    alerts: AlertRuntimeConfig
+    performance: PerformanceRuntimeConfig
+
 class RuntimeConfig(FrozenModel):
     version: str
     environment: Literal["development", "paper", "shadow", "live"]
@@ -573,6 +604,7 @@ class RuntimeConfig(FrozenModel):
     broker: BrokerConfig
     workflow: WorkflowConfig
     news: NewsConfig
+    runtime: RuntimeOperationsConfig
 
     @model_validator(mode="after")
     def cross_validate(self):

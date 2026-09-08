@@ -1,59 +1,67 @@
 # Portfolio Agent
 
-## Milestone 7 — News & Evidence Intelligence
+## Milestone 8 — Paper Trading & Position Monitoring Runtime
 
 Implemented:
-- news provider interface
-- deterministic mock provider
-- age/language filtering
-- title/content deduplication
-- content hashing
-- source weighting
-- relevance scoring
-- independent-domain requirement
-- evidence-status model
-- conflict detection
-- causal hints and structured classification
-- explicit:
-  - `SUFFICIENT`
-  - `INSUFFICIENT_EVIDENCE`
-  - `CONFLICTING_EVIDENCE`
-- allowed-cause whitelist
-- safe deterministic classifier fallback
-- isolated structured-LLM classifier boundary
-- `NewsIntelligenceService`
-- LangGraph integration between market context and regime analysis
+- runtime configuration
+- scheduler-ready `run_once()` wrapper
+- position runtime state
+- persistent-style high-water / low-water mark model
+- max unrealized profit tracking
+- max drawdown tracking
+- lifecycle-state tracking
+- position alert engine
+- alert severity mapping
+- alert cooldown / deduplication
+- paper runtime service
+- performance snapshot model
+- basic runtime performance metrics
+- SQLAlchemy persistence schemas for:
+  - position runtime states
+  - alerts
+  - performance snapshots
+- LangGraph runtime-monitoring node after position lifecycle analysis
 
-### Supported initial oil causes
-- geopolitical_supply_shock
-- opec_supply_change
-- inventory_surprise
-- demand_growth
-- demand_destruction
-- currency_move
-- refinery_outage
-- shipping_disruption
-- technical_move
-- unknown
+### Position monitoring flow
 
-### Safety / anti-hallucination rule
-The classifier never fetches its own evidence. It receives an already-built
-EvidenceBundle. If the evidence is insufficient or materially conflicting, that
-state is preserved and the classifier must not invent a causal explanation.
+Broker / Portfolio
+-> Position Lifecycle
+-> Runtime Monitoring
+   -> High-water mark tracking
+   -> Profit-at-risk alerts
+   -> Thesis alerts
+   -> Recovery alerts
+-> Portfolio / Risk / Trade Proposal
 
-### Graph update
+### ELF-type behavior
 
-market_context
--> news_intelligence
--> regime
--> signals
--> lifecycle
--> portfolio
--> risk_and_trade
--> approval
--> paper execution
+If a position previously reached a strong unrealized gain and later transitions
+to `PROFIT_AT_RISK`, the runtime can create an IMPORTANT alert while retaining
+its historical high-water mark. Duplicate alerts are suppressed during the
+configured cooldown window.
 
-### Next milestone
-Milestone 8: Paper Trading & Position Monitoring Runtime — scheduled runs,
-persistent run/order history, position high-water marks, lifecycle alerts,
-performance tracking and end-to-end paper operation.
+### LULU-type behavior
+
+If the lifecycle engine transitions a losing position to
+`RECOVERY_CONFIRMED`, the runtime emits an IMPORTANT alert. The actual add order
+still goes through portfolio limits, risk checks, human approval and paper
+execution.
+
+### Scheduling
+
+This milestone is scheduler-ready but deliberately does not embed a permanent
+background scheduler. `ScheduledRuntimeRunner.run_once()` can be invoked by
+cron, systemd timers, a container scheduler, CI jobs or a future service daemon.
+
+### Current limitation
+
+Runtime state is modeled and persistence schemas exist, but the default service
+still uses in-memory state for tests. The next persistence hardening step should
+wire repositories to PostgreSQL/SQLite and reload position runtime state on
+startup.
+
+## Next milestone
+
+Milestone 9: Backtesting & Event Study Engine — historical feed, execution
+simulation, look-ahead protection, slippage/commission modeling, strategy
+metrics and oil-event lead/lag studies.

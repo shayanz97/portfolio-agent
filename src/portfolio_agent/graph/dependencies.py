@@ -32,6 +32,11 @@ class NewsIntelligenceGateway(Protocol):
         ...
 
 
+class RuntimeMonitoringGateway(Protocol):
+    def process_lifecycle_decision(self, decision):
+        ...
+
+
 class RunPersistenceGateway(Protocol):
     def persist(self, state: dict[str, Any]) -> None:
         ...
@@ -45,6 +50,7 @@ class WorkflowDependencies:
     execution_gateway: ExecutionGateway
     persistence_gateway: RunPersistenceGateway
     news_intelligence_gateway: NewsIntelligenceGateway | None = None
+    runtime_monitoring_gateway: RuntimeMonitoringGateway | None = None
 
     @property
     def regime_engine(self) -> MarketRegimeEngine:

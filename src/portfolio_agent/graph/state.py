@@ -16,6 +16,7 @@ class PortfolioGraphState(TypedDict, total=False):
     causal_classification: dict[str, Any]
     signals: list[dict[str, Any]]
     lifecycle_decisions: list[dict[str, Any]]
+    runtime_alerts: list[dict[str, Any]]
 
     current_weights: dict[str, float]
     portfolio_target: dict[str, Any]

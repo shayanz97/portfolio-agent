@@ -265,3 +265,21 @@ def news_intelligence_node(deps: WorkflowDependencies):
             "causal_classification": classification.model_dump(mode="json"),
         }
     return node
+
+
+def runtime_monitoring_node(deps: WorkflowDependencies):
+    def node(state: PortfolioGraphState):
+        gateway = getattr(deps, "runtime_monitoring_gateway", None)
+        if gateway is None:
+            return {}
+
+        alerts = []
+        for raw in state.get("lifecycle_decisions", []):
+            from portfolio_agent.strategy.models import PositionLifecycleDecision
+            decision = PositionLifecycleDecision.model_validate(raw)
+            alert = gateway.process_lifecycle_decision(decision)
+            if alert is not None:
+                alerts.append(alert.model_dump(mode="json"))
+
+        return {"runtime_alerts": alerts}
+    return node
