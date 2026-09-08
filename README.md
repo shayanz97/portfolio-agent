@@ -1,67 +1,76 @@
 # Portfolio Agent
 
-## Milestone 8 — Paper Trading & Position Monitoring Runtime
+## Milestone 9 — Backtesting & Event Study Engine
 
 Implemented:
-- runtime configuration
-- scheduler-ready `run_once()` wrapper
-- position runtime state
-- persistent-style high-water / low-water mark model
-- max unrealized profit tracking
-- max drawdown tracking
-- lifecycle-state tracking
-- position alert engine
-- alert severity mapping
-- alert cooldown / deduplication
-- paper runtime service
-- performance snapshot model
-- basic runtime performance metrics
-- SQLAlchemy persistence schemas for:
-  - position runtime states
-  - alerts
-  - performance snapshots
-- LangGraph runtime-monitoring node after position lifecycle analysis
+- separate historical backtest path outside LangGraph
+- historical feed
+- history slicing up to simulated timestamp
+- explicit look-ahead protection by construction
+- execution simulator
+- latency in bars
+- spread model
+- slippage model
+- fixed and percentage commissions
+- simulated portfolio
+- cash and position accounting
+- mark-to-market equity curve
+- trade P&L tracking
+- backtest metrics:
+  - total return
+  - max drawdown
+  - trade count
+  - win rate
+  - gross profit/loss
+  - profit factor
+  - commissions
+  - slippage
+- event-study engine
+- T+15m / T+1h / T+4h / T+12h / T+24h / T+72h support through config
+- per-event return outcomes
+- event-study summaries with minimum event count
+- runnable demo
 
-### Position monitoring flow
+### Architecture rule
 
-Broker / Portfolio
--> Position Lifecycle
--> Runtime Monitoring
-   -> High-water mark tracking
-   -> Profit-at-risk alerts
-   -> Thesis alerts
-   -> Recovery alerts
--> Portfolio / Risk / Trade Proposal
+Backtesting does not execute LangGraph.
 
-### ELF-type behavior
+The historical simulator and the live/paper runtime share the deterministic
+Strategy Core, but execution, time and data delivery are replaced by historical
+implementations.
 
-If a position previously reached a strong unrealized gain and later transitions
-to `PROFIT_AT_RISK`, the runtime can create an IMPORTANT alert while retaining
-its historical high-water mark. Duplicate alerts are suppressed during the
-configured cooldown window.
+### Look-ahead protection
 
-### LULU-type behavior
+The strategy callback receives only:
 
-If the lifecycle engine transitions a losing position to
-`RECOVERY_CONFIRMED`, the runtime emits an IMPORTANT alert. The actual add order
-still goes through portfolio limits, risk checks, human approval and paper
-execution.
+`history_until(current_simulated_time)`
 
-### Scheduling
+Future bars are never passed to the strategy callback.
 
-This milestone is scheduler-ready but deliberately does not embed a permanent
-background scheduler. `ScheduledRuntimeRunner.run_once()` can be invoked by
-cron, systemd timers, a container scheduler, CI jobs or a future service daemon.
+Execution happens on a later bar according to configured latency, rather than at
+the signal bar itself.
 
-### Current limitation
+### Event studies
 
-Runtime state is modeled and persistence schemas exist, but the default service
-still uses in-memory state for tests. The next persistence hardening step should
-wire repositories to PostgreSQL/SQLite and reload position runtime state on
-startup.
+This milestone can answer questions such as:
+
+- After confirmed Oil Shock events, what happens to BTC after 15m / 1h / 4h?
+- Does Gold react differently from Nasdaq?
+- Is the average response statistically useful across enough events?
+- Does the sign of the reaction remain consistent over different horizons?
+
+### Current limitations
+
+- single-instrument runner is implemented first
+- no futures-roll cost model yet
+- no FX conversion model yet
+- no borrow/short model yet
+- no partial-fill model yet
+- event studies currently summarize descriptive outcomes, not statistical significance
+- commissions/slippage are simplified configurable assumptions
 
 ## Next milestone
 
-Milestone 9: Backtesting & Event Study Engine — historical feed, execution
-simulation, look-ahead protection, slippage/commission modeling, strategy
-metrics and oil-event lead/lag studies.
+Milestone 10: Production Hardening & Persistent Runtime — real repositories,
+startup recovery, durable LangGraph checkpoints, database migrations,
+observability, circuit-breaker hardening and deployable service entrypoint.

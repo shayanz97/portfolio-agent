@@ -574,6 +574,37 @@ class RuntimeOperationsConfig(FrozenModel):
     alerts: AlertRuntimeConfig
     performance: PerformanceRuntimeConfig
 
+
+class BacktestExecutionConfig(FrozenModel):
+    commission_fixed: float = Field(ge=0)
+    commission_pct: float = Field(ge=0, le=0.1)
+    slippage_bps: float = Field(ge=0, le=1000)
+    spread_bps: float = Field(ge=0, le=1000)
+    latency_bars: int = Field(ge=0, le=1000)
+
+
+class BacktestCapitalConfig(FrozenModel):
+    initial_cash: float = Field(gt=0)
+
+
+class BacktestControlsConfig(FrozenModel):
+    prohibit_lookahead: bool = True
+    require_time_ordered_data: bool = True
+    allow_fractional: bool = True
+
+
+class EventStudyConfig(FrozenModel):
+    horizons_minutes: list[int]
+    minimum_events: int = Field(gt=0)
+
+
+class BacktestConfig(FrozenModel):
+    enabled: bool = True
+    execution: BacktestExecutionConfig
+    capital: BacktestCapitalConfig
+    controls: BacktestControlsConfig
+    event_study: EventStudyConfig
+
 class RuntimeConfig(FrozenModel):
     version: str
     environment: Literal["development", "paper", "shadow", "live"]
@@ -605,6 +636,7 @@ class RuntimeConfig(FrozenModel):
     workflow: WorkflowConfig
     news: NewsConfig
     runtime: RuntimeOperationsConfig
+    backtest: BacktestConfig
 
     @model_validator(mode="after")
     def cross_validate(self):
