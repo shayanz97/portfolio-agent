@@ -1,9 +1,10 @@
-version: "0.2.0"
+version: "0.3.0"
 environment: "paper"
 
 includes:
   - assets.yaml
   - market_data.yaml
+  - features.yaml
   - events.yaml
   - strategy.yaml
   - risk.yaml

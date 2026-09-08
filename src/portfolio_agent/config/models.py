@@ -288,12 +288,90 @@ class ExecutionConfig(FrozenModel):
         return self
 
 
+
+class AtrFeatureConfig(FrozenModel):
+    enabled: bool = True
+    period: int = Field(gt=1, le=500)
+
+
+class RealizedVolatilityConfig(FrozenModel):
+    enabled: bool = True
+    period: int = Field(gt=1, le=500)
+    annualization_factor: float = Field(gt=0)
+
+
+class ZScoreFeatureConfig(FrozenModel):
+    enabled: bool = True
+    period: int = Field(gt=2, le=1000)
+    minimum_samples: int = Field(gt=2, le=1000)
+
+    @model_validator(mode="after")
+    def validate_samples(self):
+        if self.minimum_samples > self.period:
+            raise ValueError("zscore.minimum_samples cannot exceed period")
+        return self
+
+
+class MomentumFeatureConfig(FrozenModel):
+    enabled: bool = True
+    short_window: int = Field(gt=0)
+    long_window: int = Field(gt=1)
+
+    @model_validator(mode="after")
+    def validate_windows(self):
+        if self.short_window >= self.long_window:
+            raise ValueError("momentum.short_window must be < long_window")
+        return self
+
+
+class CorrelationFeatureConfig(FrozenModel):
+    enabled: bool = True
+    period: int = Field(gt=2, le=1000)
+    minimum_samples: int = Field(gt=2, le=1000)
+
+
+class RelativeStrengthFeatureConfig(FrozenModel):
+    enabled: bool = True
+    window: int = Field(gt=1, le=1000)
+
+
+class OilShockScoringConfig(FrozenModel):
+    return_weight: float = Field(ge=0, le=1)
+    zscore_weight: float = Field(ge=0, le=1)
+    confirmation_weight: float = Field(ge=0, le=1)
+    volatility_weight: float = Field(ge=0, le=1)
+
+    @model_validator(mode="after")
+    def validate_weights(self):
+        total = (
+            self.return_weight
+            + self.zscore_weight
+            + self.confirmation_weight
+            + self.volatility_weight
+        )
+        if abs(total - 1.0) > 1e-9:
+            raise ValueError("oil shock scoring weights must sum to 1.0")
+        return self
+
+
+class FeaturesConfig(FrozenModel):
+    return_windows: list[str]
+    atr: AtrFeatureConfig
+    realized_volatility: RealizedVolatilityConfig
+    zscore: ZScoreFeatureConfig
+    momentum: MomentumFeatureConfig
+    correlation: CorrelationFeatureConfig
+    relative_strength: RelativeStrengthFeatureConfig
+    oil_shock_scoring: OilShockScoringConfig
+
+
 class RuntimeConfig(FrozenModel):
     version: str
     environment: Literal["development", "paper", "shadow", "live"]
 
     assets: dict[str, AssetConfig]
     market_data: MarketDataConfig
+    features: FeaturesConfig
 
     oil_shock: OilShockConfig
     volatility_shock: ShockConfig
