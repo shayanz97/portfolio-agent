@@ -1,42 +1,65 @@
 # Portfolio Agent
 
-## Milestone 5 — Strategy Core
+## Milestone 6 — LangGraph Orchestration
 
 Implemented:
-- market regime engine
-- deterministic regime scoring from equities, crypto, VIX, DXY, yields and Oil-Shock events
-- asset signal engine (`STRONG_BUY`, `BUY`, `HOLD`, `REDUCE`, `EXIT`)
-- position lifecycle engine
-- profit-protection / peak-giveback logic
-- thesis weakening / thesis invalidation handling
-- recovery-watch and controlled add-candidate logic
-- portfolio regime target allocations
-- rebalance instructions with per-run cap
-- deterministic long-side risk engine
-- ATR/max-loss stop selection
-- position sizing from portfolio risk budget
-- TP1 / TP2 generation
-- minimum risk/reward check
-- trade proposal builder
-- centralized `regime.yaml` and `portfolio.yaml`
+- small typed `PortfolioGraphState`
+- dependency-injected workflow services
+- thin LangGraph nodes
+- explicit routing
+- market-context validation
+- portfolio reconciliation gate
+- regime -> signals -> lifecycle -> portfolio -> risk/proposal chain
+- orchestration-level circuit breaker
+- native LangGraph `interrupt()` for trade approval
+- resume with the same `thread_id`
+- paper execution gateway interface
+- persistence gateway interface
+- in-memory checkpointer by default
+- mock end-to-end gateways
+- runnable demo
+- node-level tests and optional LangGraph integration test
 
-### Position lifecycle examples
+### Graph
 
-**ELF-type case**
-- strong unrealized profit
-- meaningful drawdown from high-water mark
-- drawdown also exceeds ATR threshold
-- result: `PROFIT_AT_RISK -> REDUCE`
+START
+-> initialize
+-> reconciliation
+-> market_context
+-> regime
+-> signals
+-> lifecycle
+-> portfolio
+-> risk_and_trade
+-> circuit_breaker
 
-**LULU-type case**
-- position below entry
-- thesis remains healthy
-- recovery score above configured threshold
-- add-event and max-position limits still available
-- result: `RECOVERY_CONFIRMED -> BUY` candidate
+If no safe trade:
+-> no_action
+-> persist
+-> END
 
-### Safety rule
-The Strategy Core still does not send orders. It only produces deterministic assessments and trade proposals. Actual execution remains downstream of risk checks, human approval and the IBKR order layer.
+If trade exists:
+-> approval interrupt
+   -> rejected -> persist -> END
+   -> approved -> execute -> persist -> END
+
+### Key architecture rule
+
+LangGraph only orchestrates. Quant, strategy, portfolio, position lifecycle,
+risk and broker logic remain ordinary independently testable Python modules.
+
+### Human approval
+
+The approval node uses LangGraph `interrupt()`. A checkpointer and stable
+`thread_id` are therefore mandatory. The runner resumes with
+`Command(resume=True/False)` using the same thread.
+
+### Production note
+
+`InMemorySaver` is appropriate for development only. Before persistent paper/live
+deployment, replace it with a durable LangGraph checkpointer backed by a database.
 
 ## Next milestone
-Milestone 6: LangGraph orchestration — state, routing, persistence/checkpoints, approval interrupts and end-to-end paper workflow.
+
+Milestone 7: News & Evidence Intelligence — source ingestion, deduplication,
+evidence ranking, structured causal classification and safe LLM output.

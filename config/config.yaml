@@ -1,4 +1,4 @@
-version: "0.5.0"
+version: "0.6.0"
 environment: "paper"
 
 includes:
@@ -12,3 +12,4 @@ includes:
   - risk.yaml
   - execution.yaml
   - broker.yaml
+  - workflow.yaml

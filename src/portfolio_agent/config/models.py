@@ -502,6 +502,15 @@ class PortfolioTargetsConfig(FrozenModel):
                 raise ValueError(f"portfolio target weights for {name} must sum to 1.0")
         return self
 
+
+class WorkflowConfig(FrozenModel):
+    require_approval_for_any_trade: bool = True
+    persist_no_action_runs: bool = True
+    stop_on_reconciliation_failure: bool = True
+    stop_on_market_data_failure: bool = True
+    max_trade_proposals_per_run: int = Field(gt=0, le=100)
+    default_thread_prefix: str = "portfolio-agent"
+
 class RuntimeConfig(FrozenModel):
     version: str
     environment: Literal["development", "paper", "shadow", "live"]
@@ -530,6 +539,7 @@ class RuntimeConfig(FrozenModel):
 
     execution: ExecutionConfig
     broker: BrokerConfig
+    workflow: WorkflowConfig
 
     @model_validator(mode="after")
     def cross_validate(self):
