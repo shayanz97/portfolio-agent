@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from types import MappingProxyType
-from typing import Any, Literal, Mapping
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -17,6 +16,64 @@ class AssetConfig(FrozenModel):
     trade_enabled: bool = False
     provider: str
     currency: str = "USD"
+    market: str
+    session: str
+
+
+class DataQualityRules(FrozenModel):
+    max_spread_pct: float = Field(gt=0, le=1)
+    reject_non_positive_prices: bool = True
+    reject_missing_timestamp: bool = True
+
+
+class MarketSessionConfig(FrozenModel):
+    timezone: str
+    kind: Literal[
+        "always_open",
+        "always_available",
+        "weekday_session",
+        "nearly_24h_weekday",
+    ]
+    regular_open: str | None = None
+    regular_close: str | None = None
+    premarket_open: str | None = None
+    afterhours_close: str | None = None
+    daily_break_start: str | None = None
+    daily_break_end: str | None = None
+
+    @model_validator(mode="after")
+    def validate_required_fields(self):
+        if self.kind == "weekday_session":
+            required = [
+                self.regular_open,
+                self.regular_close,
+                self.premarket_open,
+                self.afterhours_close,
+            ]
+            if any(v is None for v in required):
+                raise ValueError("weekday_session requires all equity session times")
+
+        if self.kind == "nearly_24h_weekday":
+            if self.daily_break_start is None or self.daily_break_end is None:
+                raise ValueError("nearly_24h_weekday requires daily break times")
+        return self
+
+
+class MarketDataConfig(FrozenModel):
+    provider_priority: list[str]
+    allow_fallback: bool = True
+    reject_future_timestamps_seconds: int = Field(ge=0, le=300)
+    staleness_seconds: dict[str, int]
+    quality: DataQualityRules
+    sessions: dict[str, MarketSessionConfig]
+
+    @model_validator(mode="after")
+    def validate_staleness(self):
+        if not self.provider_priority:
+            raise ValueError("provider_priority must not be empty")
+        if any(v <= 0 for v in self.staleness_seconds.values()):
+            raise ValueError("all staleness thresholds must be > 0")
+        return self
 
 
 class OilWindowConfig(FrozenModel):
@@ -92,15 +149,9 @@ class SignalWeights(FrozenModel):
 
     @model_validator(mode="after")
     def weights_sum_to_one(self):
-        total = sum(
-            [
-                self.macro,
-                self.momentum,
-                self.technical,
-                self.volatility,
-                self.event,
-                self.news,
-            ]
+        total = (
+            self.macro + self.momentum + self.technical
+            + self.volatility + self.event + self.news
         )
         if abs(total - 1.0) > 1e-9:
             raise ValueError(f"signal weights must sum to 1.0, got {total}")
@@ -242,6 +293,7 @@ class RuntimeConfig(FrozenModel):
     environment: Literal["development", "paper", "shadow", "live"]
 
     assets: dict[str, AssetConfig]
+    market_data: MarketDataConfig
 
     oil_shock: OilShockConfig
     volatility_shock: ShockConfig
@@ -271,6 +323,22 @@ class RuntimeConfig(FrozenModel):
             raise ValueError(
                 "averaging_down.max_position_weight_after_add "
                 "cannot exceed portfolio.max_single_asset_weight"
+            )
+
+        unknown_sessions = {
+            asset.session for asset in self.assets.values()
+            if asset.session not in self.market_data.sessions
+        }
+        if unknown_sessions:
+            raise ValueError(f"assets reference unknown sessions: {sorted(unknown_sessions)}")
+
+        missing_staleness = {
+            asset.asset_class for asset in self.assets.values()
+            if asset.asset_class not in self.market_data.staleness_seconds
+        }
+        if missing_staleness:
+            raise ValueError(
+                f"missing market-data staleness thresholds for: {sorted(missing_staleness)}"
             )
 
         return self

@@ -6,6 +6,8 @@ assets:
     trade_enabled: false
     provider: "future"
     currency: "USD"
+    market: "NYMEX"
+    session: "FUTURES_APPROX"
 
   BRENT:
     symbol: "BZ"
@@ -14,6 +16,8 @@ assets:
     trade_enabled: false
     provider: "future"
     currency: "USD"
+    market: "NYMEX"
+    session: "FUTURES_APPROX"
 
   GOLD:
     symbol: "GC"
@@ -22,6 +26,8 @@ assets:
     trade_enabled: false
     provider: "future"
     currency: "USD"
+    market: "COMEX"
+    session: "FUTURES_APPROX"
 
   SILVER:
     symbol: "SI"
@@ -30,6 +36,8 @@ assets:
     trade_enabled: false
     provider: "future"
     currency: "USD"
+    market: "COMEX"
+    session: "FUTURES_APPROX"
 
   BTC:
     symbol: "BTC"
@@ -38,6 +46,8 @@ assets:
     trade_enabled: false
     provider: "crypto"
     currency: "USD"
+    market: "CRYPTO"
+    session: "CRYPTO_24_7"
 
   ETH:
     symbol: "ETH"
@@ -46,6 +56,8 @@ assets:
     trade_enabled: false
     provider: "crypto"
     currency: "USD"
+    market: "CRYPTO"
+    session: "CRYPTO_24_7"
 
   SOL:
     symbol: "SOL"
@@ -54,6 +66,8 @@ assets:
     trade_enabled: false
     provider: "crypto"
     currency: "USD"
+    market: "CRYPTO"
+    session: "CRYPTO_24_7"
 
   SPY:
     symbol: "SPY"
@@ -62,6 +76,8 @@ assets:
     trade_enabled: true
     provider: "ibkr"
     currency: "USD"
+    market: "NYSE_ARCA"
+    session: "US_EQUITY"
 
   QQQ:
     symbol: "QQQ"
@@ -70,6 +86,8 @@ assets:
     trade_enabled: true
     provider: "ibkr"
     currency: "USD"
+    market: "NASDAQ"
+    session: "US_EQUITY"
 
   VIX:
     symbol: "VIX"
@@ -78,6 +96,8 @@ assets:
     trade_enabled: false
     provider: "macro"
     currency: "USD"
+    market: "CBOE"
+    session: "US_EQUITY"
 
   DXY:
     symbol: "DXY"
@@ -86,6 +106,8 @@ assets:
     trade_enabled: false
     provider: "macro"
     currency: "USD"
+    market: "MACRO"
+    session: "MACRO_CONTINUOUS"
 
   US10Y:
     symbol: "US10Y"
@@ -94,3 +116,5 @@ assets:
     trade_enabled: false
     provider: "macro"
     currency: "USD"
+    market: "MACRO"
+    session: "MACRO_CONTINUOUS"

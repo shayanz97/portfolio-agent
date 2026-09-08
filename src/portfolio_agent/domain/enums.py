@@ -42,3 +42,22 @@ class OrderStatus(StrEnum):
     CANCEL_REQUESTED = "CANCEL_REQUESTED"
     CANCELLED = "CANCELLED"
     EXPIRED = "EXPIRED"
+
+
+class DataQuality(StrEnum):
+    OK = "OK"
+    STALE = "STALE"
+    INVALID = "INVALID"
+    FUTURE_TIMESTAMP = "FUTURE_TIMESTAMP"
+    WIDE_SPREAD = "WIDE_SPREAD"
+    MISSING = "MISSING"
+
+
+class MarketStatus(StrEnum):
+    OPEN = "OPEN"
+    CLOSED = "CLOSED"
+    PRE_MARKET = "PRE_MARKET"
+    AFTER_HOURS = "AFTER_HOURS"
+    BREAK = "BREAK"
+    AVAILABLE = "AVAILABLE"
+    UNKNOWN = "UNKNOWN"
