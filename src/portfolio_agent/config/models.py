@@ -511,6 +511,38 @@ class WorkflowConfig(FrozenModel):
     max_trade_proposals_per_run: int = Field(gt=0, le=100)
     default_thread_prefix: str = "portfolio-agent"
 
+
+class NewsIngestionConfig(FrozenModel):
+    max_items_per_run: int = Field(gt=0, le=1000)
+    max_age_minutes: int = Field(gt=0, le=10080)
+    language_allowlist: list[str]
+
+
+class NewsDedupConfig(FrozenModel):
+    title_similarity_threshold: float = Field(ge=0, le=1)
+    content_hash_enabled: bool = True
+
+
+class NewsEvidenceConfig(FrozenModel):
+    minimum_items: int = Field(gt=0, le=50)
+    minimum_weighted_score: float = Field(gt=0)
+    conflicting_score_threshold: float = Field(ge=0, le=1)
+    require_independent_domains: int = Field(gt=0, le=20)
+
+
+class NewsClassificationConfig(FrozenModel):
+    allowed_causes: list[str]
+    minimum_confidence: float = Field(ge=0, le=1)
+
+
+class NewsConfig(FrozenModel):
+    enabled: bool = True
+    ingestion: NewsIngestionConfig
+    deduplication: NewsDedupConfig
+    evidence: NewsEvidenceConfig
+    source_weights: dict[str, float]
+    classification: NewsClassificationConfig
+
 class RuntimeConfig(FrozenModel):
     version: str
     environment: Literal["development", "paper", "shadow", "live"]
@@ -540,6 +572,7 @@ class RuntimeConfig(FrozenModel):
     execution: ExecutionConfig
     broker: BrokerConfig
     workflow: WorkflowConfig
+    news: NewsConfig
 
     @model_validator(mode="after")
     def cross_validate(self):

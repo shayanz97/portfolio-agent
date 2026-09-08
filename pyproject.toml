@@ -1,6 +1,6 @@
 [project]
 name = "portfolio-agent"
-version = "0.6.0"
+version = "0.7.0"
 description = "LangGraph-based portfolio monitoring and paper-trading agent"
 requires-python = ">=3.11"
 dependencies = [

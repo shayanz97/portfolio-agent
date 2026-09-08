@@ -27,6 +27,11 @@ class ExecutionGateway(Protocol):
         ...
 
 
+class NewsIntelligenceGateway(Protocol):
+    def analyse(self, *, query: str):
+        ...
+
+
 class RunPersistenceGateway(Protocol):
     def persist(self, state: dict[str, Any]) -> None:
         ...
@@ -39,6 +44,7 @@ class WorkflowDependencies:
     reconciliation_gateway: ReconciliationGateway
     execution_gateway: ExecutionGateway
     persistence_gateway: RunPersistenceGateway
+    news_intelligence_gateway: NewsIntelligenceGateway | None = None
 
     @property
     def regime_engine(self) -> MarketRegimeEngine:

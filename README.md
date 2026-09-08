@@ -1,65 +1,59 @@
 # Portfolio Agent
 
-## Milestone 6 — LangGraph Orchestration
+## Milestone 7 — News & Evidence Intelligence
 
 Implemented:
-- small typed `PortfolioGraphState`
-- dependency-injected workflow services
-- thin LangGraph nodes
-- explicit routing
-- market-context validation
-- portfolio reconciliation gate
-- regime -> signals -> lifecycle -> portfolio -> risk/proposal chain
-- orchestration-level circuit breaker
-- native LangGraph `interrupt()` for trade approval
-- resume with the same `thread_id`
-- paper execution gateway interface
-- persistence gateway interface
-- in-memory checkpointer by default
-- mock end-to-end gateways
-- runnable demo
-- node-level tests and optional LangGraph integration test
+- news provider interface
+- deterministic mock provider
+- age/language filtering
+- title/content deduplication
+- content hashing
+- source weighting
+- relevance scoring
+- independent-domain requirement
+- evidence-status model
+- conflict detection
+- causal hints and structured classification
+- explicit:
+  - `SUFFICIENT`
+  - `INSUFFICIENT_EVIDENCE`
+  - `CONFLICTING_EVIDENCE`
+- allowed-cause whitelist
+- safe deterministic classifier fallback
+- isolated structured-LLM classifier boundary
+- `NewsIntelligenceService`
+- LangGraph integration between market context and regime analysis
 
-### Graph
+### Supported initial oil causes
+- geopolitical_supply_shock
+- opec_supply_change
+- inventory_surprise
+- demand_growth
+- demand_destruction
+- currency_move
+- refinery_outage
+- shipping_disruption
+- technical_move
+- unknown
 
-START
--> initialize
--> reconciliation
--> market_context
+### Safety / anti-hallucination rule
+The classifier never fetches its own evidence. It receives an already-built
+EvidenceBundle. If the evidence is insufficient or materially conflicting, that
+state is preserved and the classifier must not invent a causal explanation.
+
+### Graph update
+
+market_context
+-> news_intelligence
 -> regime
 -> signals
 -> lifecycle
 -> portfolio
 -> risk_and_trade
--> circuit_breaker
+-> approval
+-> paper execution
 
-If no safe trade:
--> no_action
--> persist
--> END
-
-If trade exists:
--> approval interrupt
-   -> rejected -> persist -> END
-   -> approved -> execute -> persist -> END
-
-### Key architecture rule
-
-LangGraph only orchestrates. Quant, strategy, portfolio, position lifecycle,
-risk and broker logic remain ordinary independently testable Python modules.
-
-### Human approval
-
-The approval node uses LangGraph `interrupt()`. A checkpointer and stable
-`thread_id` are therefore mandatory. The runner resumes with
-`Command(resume=True/False)` using the same thread.
-
-### Production note
-
-`InMemorySaver` is appropriate for development only. Before persistent paper/live
-deployment, replace it with a durable LangGraph checkpointer backed by a database.
-
-## Next milestone
-
-Milestone 7: News & Evidence Intelligence — source ingestion, deduplication,
-evidence ranking, structured causal classification and safe LLM output.
+### Next milestone
+Milestone 8: Paper Trading & Position Monitoring Runtime — scheduled runs,
+persistent run/order history, position high-water marks, lifecycle alerts,
+performance tracking and end-to-end paper operation.

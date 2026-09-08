@@ -241,3 +241,27 @@ def persist_node(deps: WorkflowDependencies):
         deps.persistence_gateway.persist(dict(state))
         return {"status": state.get("status", "COMPLETED")}
     return node
+
+
+def news_intelligence_node(deps: WorkflowDependencies):
+    def node(state: PortfolioGraphState):
+        gateway = deps.news_intelligence_gateway
+        context = state["market_context"]
+        oil_event = context.get("oil_event")
+
+        if gateway is None or not oil_event:
+            return {
+                "news_items": [],
+                "evidence_bundle": {},
+                "causal_classification": {},
+            }
+
+        query = context.get("news_query", "oil")
+        items, bundle, classification = gateway.analyse(query=query)
+
+        return {
+            "news_items": [x.model_dump(mode="json") for x in items],
+            "evidence_bundle": bundle.model_dump(mode="json"),
+            "causal_classification": classification.model_dump(mode="json"),
+        }
+    return node

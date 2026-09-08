@@ -1,0 +1,43 @@
+news:
+  enabled: true
+
+  ingestion:
+    max_items_per_run: 100
+    max_age_minutes: 240
+    language_allowlist:
+      - en
+      - de
+
+  deduplication:
+    title_similarity_threshold: 0.90
+    content_hash_enabled: true
+
+  evidence:
+    minimum_items: 2
+    minimum_weighted_score: 1.20
+    conflicting_score_threshold: 0.75
+    require_independent_domains: 2
+
+  source_weights:
+    primary_source: 1.00
+    major_wire: 0.95
+    major_financial_media: 0.85
+    specialist_media: 0.70
+    company_press_release: 0.80
+    social_media: 0.35
+    unknown: 0.40
+
+  classification:
+    allowed_causes:
+      - geopolitical_supply_shock
+      - opec_supply_change
+      - inventory_surprise
+      - demand_growth
+      - demand_destruction
+      - currency_move
+      - refinery_outage
+      - shipping_disruption
+      - technical_move
+      - unknown
+
+    minimum_confidence: 0.65

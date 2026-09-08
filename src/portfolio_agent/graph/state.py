@@ -11,6 +11,9 @@ class PortfolioGraphState(TypedDict, total=False):
 
     market_context: dict[str, Any]
     regime: dict[str, Any]
+    news_items: list[dict[str, Any]]
+    evidence_bundle: dict[str, Any]
+    causal_classification: dict[str, Any]
     signals: list[dict[str, Any]]
     lifecycle_decisions: list[dict[str, Any]]
 

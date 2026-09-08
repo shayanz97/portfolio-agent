@@ -12,6 +12,7 @@ from portfolio_agent.graph.nodes import (
     lifecycle_node,
     market_context_node,
     no_action_node,
+    news_intelligence_node,
     persist_node,
     portfolio_node,
     reconciliation_node,
@@ -59,6 +60,7 @@ def build_portfolio_graph(
     builder.add_node("initialize", initialize_node(deps))
     builder.add_node("reconciliation", reconciliation_node(deps))
     builder.add_node("market_context", market_context_node(deps))
+    builder.add_node("news_intelligence", news_intelligence_node(deps))
     builder.add_node("regime", regime_node(deps))
     builder.add_node("signals", signal_node(deps))
     builder.add_node("lifecycle", lifecycle_node(deps))
@@ -87,11 +89,12 @@ def build_portfolio_graph(
         "market_context",
         after_market_context,
         {
-            "regime": "regime",
+            "regime": "news_intelligence",
             "circuit_breaker": "circuit_breaker",
         },
     )
 
+    builder.add_edge("news_intelligence", "regime")
     builder.add_edge("regime", "signals")
     builder.add_edge("signals", "lifecycle")
     builder.add_edge("lifecycle", "portfolio")
