@@ -195,6 +195,8 @@ class PositionManagementConfig(FrozenModel):
     profit_protection: ProfitProtectionConfig
     partial_profit: PartialProfitConfig
     trailing_stop: TrailingStopConfig
+    thesis: ThesisConfig
+    recovery: RecoveryConfig
     averaging_down: AveragingDownConfig
     cooldown: CooldownConfig
 
@@ -405,6 +407,101 @@ class IbkrConfig(FrozenModel):
 class BrokerConfig(FrozenModel):
     ibkr: IbkrConfig
 
+
+class RegimeThresholdsConfig(FrozenModel):
+    risk_on: float = Field(ge=-1, le=1)
+    risk_off: float = Field(ge=-1, le=1)
+    inflation_shock: float = Field(ge=-1, le=1)
+    crisis: float = Field(ge=-1, le=1)
+
+    @model_validator(mode="after")
+    def validate_order(self):
+        if not self.crisis < self.inflation_shock < self.risk_off < self.risk_on:
+            raise ValueError("regime thresholds must satisfy crisis < inflation_shock < risk_off < risk_on")
+        return self
+
+
+class RegimeWeightsConfig(FrozenModel):
+    equities: float = Field(ge=0, le=1)
+    crypto: float = Field(ge=0, le=1)
+    volatility: float = Field(ge=0, le=1)
+    dollar: float = Field(ge=0, le=1)
+    yields: float = Field(ge=0, le=1)
+    oil_event: float = Field(ge=0, le=1)
+
+    @model_validator(mode="after")
+    def validate_sum(self):
+        total = self.equities + self.crypto + self.volatility + self.dollar + self.yields + self.oil_event
+        if abs(total - 1.0) > 1e-9:
+            raise ValueError("regime weights must sum to 1.0")
+        return self
+
+
+class InflationShockConfig(FrozenModel):
+    require_oil_event: bool = True
+    min_oil_score: float = Field(ge=0, le=100)
+    require_yields_up: bool = True
+
+
+class RegimeConfig(FrozenModel):
+    thresholds: RegimeThresholdsConfig
+    weights: RegimeWeightsConfig
+    inflation_shock: InflationShockConfig
+
+
+class TechnicalDefaultsConfig(FrozenModel):
+    bullish_momentum_threshold: float = Field(ge=-1, le=1)
+    bearish_momentum_threshold: float = Field(ge=-1, le=1)
+    high_volatility_threshold: float = Field(gt=0)
+
+
+class ThesisConfig(FrozenModel):
+    healthy_threshold: float = Field(ge=0, le=100)
+    weakening_threshold: float = Field(ge=0, le=100)
+
+    @model_validator(mode="after")
+    def validate_order(self):
+        if self.weakening_threshold >= self.healthy_threshold:
+            raise ValueError("thesis weakening threshold must be below healthy threshold")
+        return self
+
+
+class RecoveryConfig(FrozenModel):
+    minimum_score_to_watch: float = Field(ge=0, le=100)
+    minimum_score_to_add: float = Field(ge=0, le=100)
+
+    @model_validator(mode="after")
+    def validate_order(self):
+        if self.minimum_score_to_watch >= self.minimum_score_to_add:
+            raise ValueError("recovery watch threshold must be below add threshold")
+        return self
+
+
+class SignalAdjustmentConfig(FrozenModel):
+    strong_buy: float
+    buy: float
+    reduce: float
+    exit: float
+
+
+class RebalanceConfig(FrozenModel):
+    minimum_weight_change: float = Field(ge=0, le=1)
+    respect_max_rebalance_per_run: bool = True
+
+
+class PortfolioTargetsConfig(FrozenModel):
+    regimes: dict[str, dict[str, float]]
+    signal_adjustment: SignalAdjustmentConfig
+    rebalance: RebalanceConfig
+
+    @model_validator(mode="after")
+    def validate_regime_allocations(self):
+        for name, weights in self.regimes.items():
+            total = sum(weights.values())
+            if abs(total - 1.0) > 1e-9:
+                raise ValueError(f"portfolio target weights for {name} must sum to 1.0")
+        return self
+
 class RuntimeConfig(FrozenModel):
     version: str
     environment: Literal["development", "paper", "shadow", "live"]
@@ -412,6 +509,7 @@ class RuntimeConfig(FrozenModel):
     assets: dict[str, AssetConfig]
     market_data: MarketDataConfig
     features: FeaturesConfig
+    regime: RegimeConfig
 
     oil_shock: OilShockConfig
     volatility_shock: ShockConfig
@@ -420,6 +518,8 @@ class RuntimeConfig(FrozenModel):
     signal_thresholds: SignalThresholds
     signal_weights: SignalWeights
     position_management: PositionManagementConfig
+    technical_defaults: TechnicalDefaultsConfig
+    portfolio_targets: PortfolioTargetsConfig
 
     portfolio: PortfolioLimits
     trade_risk: TradeRiskConfig

@@ -12,6 +12,11 @@ signal_weights:
   event: 0.20
   news: 0.15
 
+technical_defaults:
+  bullish_momentum_threshold: 0.10
+  bearish_momentum_threshold: -0.10
+  high_volatility_threshold: 0.50
+
 position_management:
   enabled: true
 
@@ -29,6 +34,14 @@ position_management:
   trailing_stop:
     enabled: true
     atr_multiplier: 2.0
+
+  thesis:
+    healthy_threshold: 70.0
+    weakening_threshold: 45.0
+
+  recovery:
+    minimum_score_to_watch: 60.0
+    minimum_score_to_add: 75.0
 
   averaging_down:
     enabled: true

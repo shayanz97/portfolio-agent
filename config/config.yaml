@@ -1,11 +1,14 @@
-version: "0.4.0"
+version: "0.5.0"
 environment: "paper"
+
 includes:
   - assets.yaml
   - market_data.yaml
   - features.yaml
   - events.yaml
+  - regime.yaml
   - strategy.yaml
+  - portfolio.yaml
   - risk.yaml
   - execution.yaml
   - broker.yaml

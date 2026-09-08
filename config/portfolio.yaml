@@ -1,0 +1,46 @@
+portfolio_targets:
+  regimes:
+    RISK_ON:
+      equity: 0.50
+      crypto: 0.20
+      precious_metal: 0.10
+      energy: 0.05
+      cash: 0.15
+
+    NEUTRAL:
+      equity: 0.45
+      crypto: 0.15
+      precious_metal: 0.10
+      energy: 0.05
+      cash: 0.25
+
+    RISK_OFF:
+      equity: 0.30
+      crypto: 0.08
+      precious_metal: 0.18
+      energy: 0.08
+      cash: 0.36
+
+    INFLATION_SHOCK:
+      equity: 0.25
+      crypto: 0.05
+      precious_metal: 0.22
+      energy: 0.18
+      cash: 0.30
+
+    CRISIS:
+      equity: 0.15
+      crypto: 0.03
+      precious_metal: 0.22
+      energy: 0.05
+      cash: 0.55
+
+  signal_adjustment:
+    strong_buy: 0.05
+    buy: 0.025
+    reduce: -0.025
+    exit: -0.05
+
+  rebalance:
+    minimum_weight_change: 0.01
+    respect_max_rebalance_per_run: true
